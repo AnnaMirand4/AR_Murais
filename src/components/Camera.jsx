@@ -48,6 +48,6 @@ const Camera = () => {
       )}
     </div>
   );
-};
+}
 
 export default Camera;
