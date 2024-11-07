@@ -1,10 +1,15 @@
 import React, { useRef, useEffect, useState } from 'react';
+import *as cocoSsd from '@tensorflow-models/coco-ssd';
+import '@tensorflow/tfjs';
+
 
 const Camera = () => {
   const videoRef = useRef(null);
   const [cameraActive, setCameraActive] = useState(false);
+  const [detections, setDetections] = useState([]);
 
-  const enableCamera = async () => {
+
+  const habilitarCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { exact: "environment" } }, // Câmera traseira
@@ -13,14 +18,27 @@ const Camera = () => {
         videoRef.current.srcObject = stream;
       }
       setCameraActive(true);
+      detectarObjetos();
     } catch (error) {
       console.error("Erro ao acessar a câmera:", error.message);
       alert("Não foi possível acessar a câmera. Verifique as permissões.");
     }
   };
 
+  const detectarObjetos = async () => {
+    const model = await cocoSsd.load();
+    const video = videoRef.current
+
+    const detectar = async () => {
+      const predictions = await model.detect(video)
+      setDetections(predictions);
+      requestAnimationFrame(detectar)
+    }
+    detectar()
+  }
+
   useEffect(() => {
-    enableCamera(); // Ativa a câmera automaticamente ao montar o componente
+    habilitarCamera(); // Ativa a câmera automaticamente ao montar o componente
 
     // Cleanup do stream ao desmontar o componente
     return () => {
@@ -46,6 +64,14 @@ const Camera = () => {
       ) : (
         <p>Carregando câmera...</p>
       )}
+
+      <div>
+        {detections.map((detection, index) => (
+        <p key={index}>
+          {detection.class}: {Math.round(detection.score * 100)}%
+        </p>
+      ))}
+      </div>
     </div>
   );
 }
